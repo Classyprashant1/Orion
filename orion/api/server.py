@@ -134,7 +134,9 @@ class _WebSocketHub:
 # ------------------------------------------------------------------ #
 # FastAPI Application Factory
 # ------------------------------------------------------------------ #
-def create_app(assistant: OrionAssistant) -> FastAPI:
+def create_app(assistant: OrionAssistant | None = None) -> FastAPI:
+    if assistant is None:
+        assistant = OrionAssistant()
     hub = _WebSocketHub()
 
     def _on_assistant_event(event: dict[str, Any]) -> None:
@@ -439,11 +441,17 @@ def create_app(assistant: OrionAssistant) -> FastAPI:
 class OrionAPIServer:
     """Runs the FastAPI Companion Server in a clean background thread."""
 
-    def __init__(self, assistant: OrionAssistant, host: str, port: int) -> None:
+    def __init__(
+        self,
+        assistant: OrionAssistant,
+        host: str,
+        port: int,
+        app: FastAPI | None = None,
+    ) -> None:
         self.assistant = assistant
         self.host = host
         self.port = port
-        self.app = create_app(assistant)
+        self.app = app or create_app(assistant)
         self._server: uvicorn.Server | None = None
         self._thread: threading.Thread | None = None
 

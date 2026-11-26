@@ -59,8 +59,17 @@ class OrionConfig:
         screenshot_dir = _resolve_path(
             os.getenv("ORION_SCREENSHOT_DIR", ""), "screenshots"
         )
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        screenshot_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            screenshot_dir.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            import tempfile
+
+            tmp_root = Path(tempfile.gettempdir()) / "orion"
+            db_path = tmp_root / "data" / "orion.db"
+            screenshot_dir = tmp_root / "screenshots"
+            db_path.parent.mkdir(parents=True, exist_ok=True)
+            screenshot_dir.mkdir(parents=True, exist_ok=True)
 
         return cls(
             project_root=PROJECT_ROOT,

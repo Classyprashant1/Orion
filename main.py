@@ -22,6 +22,11 @@ from orion.core.assistant import OrionAssistant
 from orion.core.models import InputMode
 
 
+# Top-level FastAPI application instance for Vercel and ASGI servers
+default_assistant = OrionAssistant()
+app = create_app(default_assistant)
+
+
 def run_cli(assistant: OrionAssistant) -> None:
     print("============================================================")
     print("  ORION — Voice-Controlled Desktop Virtual Assistant (CLI)")
@@ -87,11 +92,10 @@ def main(argv: list[str] | None = None) -> int:
     assistant = OrionAssistant(config=config)
 
     if args.cli:
-        run_cli(assistant)
+        run_cli(default_assistant)
         return 0
 
     if args.web_only:
-        app = create_app(assistant)
         url = f"http://{host}:{port}"
         print(f"ORION Companion Web Control Center running at {url}")
         if args.open_browser:
@@ -99,18 +103,18 @@ def main(argv: list[str] | None = None) -> int:
         try:
             uvicorn.run(app, host=host, port=port, log_level="info")
         finally:
-            assistant.shutdown()
+            default_assistant.shutdown()
         return 0
 
     # Default: Native Tkinter Desktop GUI (+ optional Companion API Server)
     api_server: OrionAPIServer | None = None
     if config.auto_start_api and not args.no_web:
-        api_server = OrionAPIServer(assistant, host=host, port=port)
+        api_server = OrionAPIServer(default_assistant, host=host, port=port, app=app)
         api_server.start()
 
     from orion.gui.app import OrionDesktopApp
 
-    desktop_app = OrionDesktopApp(assistant=assistant, api_server=api_server)
+    desktop_app = OrionDesktopApp(assistant=default_assistant, api_server=api_server)
     desktop_app.run()
     return 0
 
