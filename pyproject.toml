@@ -1,0 +1,35 @@
+[project]
+name = "orion-assistant"
+version = "1.0.0"
+description = "ORION - Python-Based Voice-Controlled Desktop Virtual Assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Prasant Sharma (24CS45)" },
+    { name = "Nitesh Bhati (24CS50)" },
+    { name = "Hariom Dwivedi (24CS30)" },
+]
+dependencies = [
+    "SpeechRecognition>=3.10.4",
+    "PyAudio>=0.2.14",
+    "pyttsx3>=2.90",
+    "PyAutoGUI>=0.9.54",
+    "Pillow>=10.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.1",
+    "psutil>=6.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+]
+
+[tool.uv]
+managed = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

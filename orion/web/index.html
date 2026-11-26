@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORION — Voice-Controlled Desktop Virtual Assistant</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">✦</div>
+        <div>
+          <div class="brand-title">ORION</div>
+          <div class="brand-subtitle">Desktop Virtual Assistant</div>
+        </div>
+      </div>
+
+      <nav class="nav-list" role="navigation" aria-label="Primary">
+        <button class="nav-item active" data-view="console">
+          <span class="nav-icon">🎙️</span>
+          <span>Assistant Console</span>
+        </button>
+        <button class="nav-item" data-view="shortcuts">
+          <span class="nav-icon">⚡</span>
+          <span>Commands &amp; Apps</span>
+        </button>
+        <button class="nav-item" data-view="history">
+          <span class="nav-icon">📜</span>
+          <span>History &amp; Captures</span>
+        </button>
+        <button class="nav-item" data-view="notes">
+          <span class="nav-icon">📝</span>
+          <span>Notes</span>
+          <span class="badge-pill" id="nav-notes-count">0</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <span class="nav-icon">⚙️</span>
+          <span>Settings &amp; Audio</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="connection-pill" id="ws-status">
+          <span class="dot"></span>
+          <span>Connecting...</span>
+        </div>
+        <div class="hardware-meta" id="sidebar-hw-meta">Checking audio devices...</div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="main-area">
+      <!-- Top Bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle Menu">☰</button>
+          <div>
+            <h1 id="page-title">Assistant Console</h1>
+            <p class="topbar-sub" id="status-detail">Ready for voice or text command</p>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <span class="state-chip state-idle" id="state-chip">IDLE</span>
+          <button class="btn btn-secondary btn-sm" id="btn-wake-toggle" title="Toggle continuous hands-free wake word ('Orion')">
+            👂 Wake Word: OFF
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-tts-mute" title="Mute or unmute voice output">
+            🔊 Voice: ON
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-tts-replay" title="Replay the last response">
+            🔁 Replay
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-tts-stop" title="Stop current speech output">
+            🔇 Stop Speech
+          </button>
+        </div>
+      </header>
+
+      <!-- VIEW 1: ASSISTANT CONSOLE -->
+      <section class="view active" id="view-console">
+        <div class="console-grid">
+          <!-- Left Voice Control Panel -->
+          <div class="card voice-hero-card">
+            <div class="orb-wrapper">
+              <button class="orion-orb" id="btn-voice-listen" title="Click to speak a voice command">
+                <span class="orb-ring"></span>
+                <span class="orb-core">🎙️</span>
+              </button>
+              <div class="orb-label" id="orb-label">Click to Speak</div>
+              <div class="orb-hint">Or type any command below — supports voice &amp; text</div>
+            </div>
+
+            <div class="quick-actions-section">
+              <div class="section-label">Quick Actions</div>
+              <div class="chip-grid" id="quick-actions">
+                <button class="chip-btn" data-cmd="What time is it?">🕒 Time</button>
+                <button class="chip-btn" data-cmd="What is today's date?">📅 Date</button>
+                <button class="chip-btn" data-cmd="Take a screenshot">📸 Screenshot</button>
+                <button class="chip-btn" data-cmd="System status">💻 System Info</button>
+                <button class="chip-btn" data-cmd="Open Notepad">📄 Notepad</button>
+                <button class="chip-btn" data-cmd="Open Calculator">🧮 Calculator</button>
+                <button class="chip-btn" data-cmd="Open YouTube">▶️ YouTube</button>
+                <button class="chip-btn" data-cmd="What is the weather?">🌤️ Weather</button>
+                <button class="chip-btn" data-cmd="Read my notes">📝 Notes</button>
+                <button class="chip-btn chip-warn" data-cmd="Lock my screen">🔒 Lock PC</button>
+              </div>
+            </div>
+
+            <div class="mini-stats" id="console-mini-stats">
+              <div class="mini-stat">
+                <div class="mini-stat-val" id="stat-total-cmds">0</div>
+                <div class="mini-stat-lbl">Commands</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-val" id="stat-apps-count">0</div>
+                <div class="mini-stat-lbl">Apps</div>
+              </div>
+              <div class="mini-stat">
+                <div class="mini-stat-val" id="stat-shots-count">0</div>
+                <div class="mini-stat-lbl">Captures</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Conversation & Command Feed -->
+          <div class="card transcript-card">
+            <div class="card-header">
+              <h2>Command &amp; Response Feed</h2>
+              <button class="btn btn-ghost btn-sm" id="btn-clear-feed">Clear View</button>
+            </div>
+
+            <div class="feed-list" id="conversation-feed">
+              <div class="feed-empty" id="feed-empty">
+                <div class="empty-icon">✦</div>
+                <h3>Welcome to ORION</h3>
+                <p>Click the microphone orb or enter a command below. Try <code>"What time is it?"</code>, <code>"Open Notepad"</code>, <code>"Search Google for Python"</code>, or <code>"Take a screenshot"</code>.</p>
+              </div>
+            </div>
+
+            <form class="command-bar" id="command-form" novalidate>
+              <input
+                type="text"
+                id="command-input"
+                placeholder="Type a command (e.g., Open Calculator, Search Google for Python, Take a screenshot)..."
+                autocomplete="off"
+                required
+              />
+              <label class="speak-toggle" title="Speak response aloud via pyttsx3">
+                <input type="checkbox" id="chk-speak-response" checked />
+                <span>🔊</span>
+              </label>
+              <button type="submit" class="btn btn-primary" id="btn-send-command">
+                Run Command
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: COMMANDS, APPS & WEBSITES -->
+      <section class="view" id="view-shortcuts">
+        <div class="subtabs">
+          <button class="subtab active" data-subtab="catalog">Supported Commands</button>
+          <button class="subtab" data-subtab="apps">Applications Manager</button>
+          <button class="subtab" data-subtab="websites">Websites Manager</button>
+        </div>
+
+        <!-- Supported Commands Catalog -->
+        <div class="subview active" id="subview-catalog">
+          <div class="card">
+            <div class="card-header">
+              <h2>Built-in Rule-Based Command Catalog</h2>
+              <input type="search" id="catalog-search" class="search-input" placeholder="Filter commands..." />
+            </div>
+            <div class="catalog-grid" id="catalog-grid"></div>
+          </div>
+        </div>
+
+        <!-- Applications Manager -->
+        <div class="subview" id="subview-apps">
+          <div class="two-col-grid">
+            <div class="card">
+              <div class="card-header"><h2>Register Desktop Application</h2></div>
+              <form id="app-form" class="stacked-form" novalidate>
+                <div class="form-group">
+                  <label for="app-alias">Voice / Command Alias *</label>
+                  <input id="app-alias" type="text" placeholder="e.g., spotify or word" required />
+                  <small>Triggered by saying "Open &lt;alias&gt;"</small>
+                </div>
+                <div class="form-group">
+                  <label for="app-name">Display Name *</label>
+                  <input id="app-name" type="text" placeholder="e.g., Spotify" required />
+                </div>
+                <div class="form-group">
+                  <label for="app-exe">Executable Path or Command *</label>
+                  <input id="app-exe" type="text" placeholder="e.g., notepad.exe or C:\Path\App.exe" required />
+                </div>
+                <div class="form-group">
+                  <label for="app-args">Optional Arguments</label>
+                  <input id="app-args" type="text" placeholder="Optional CLI flags" />
+                </div>
+                <label class="checkbox-row">
+                  <input id="app-confirm" type="checkbox" />
+                  <span>Require explicit confirmation before launching</span>
+                </label>
+                <button type="submit" class="btn btn-primary">Save Application</button>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2>Registered Applications</h2>
+                <span class="muted" id="apps-table-count">0 apps</span>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Alias</th>
+                      <th>Application</th>
+                      <th>Executable</th>
+                      <th>Safety</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="apps-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Websites Manager -->
+        <div class="subview" id="subview-websites">
+          <div class="two-col-grid">
+            <div class="card">
+              <div class="card-header"><h2>Add Website Bookmark</h2></div>
+              <form id="website-form" class="stacked-form" novalidate>
+                <div class="form-group">
+                  <label for="site-alias">Voice / Command Alias *</label>
+                  <input id="site-alias" type="text" placeholder="e.g., university portal" required />
+                </div>
+                <div class="form-group">
+                  <label for="site-name">Display Name *</label>
+                  <input id="site-name" type="text" placeholder="e.g., Lingaya's Portal" required />
+                </div>
+                <div class="form-group">
+                  <label for="site-url">Website URL *</label>
+                  <input id="site-url" type="url" placeholder="https://example.com" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Save Website</button>
+              </form>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2>Registered Websites</h2>
+                <span class="muted" id="websites-table-count">0 sites</span>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Alias</th>
+                      <th>Name</th>
+                      <th>URL</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="websites-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: HISTORY & SCREENSHOTS -->
+      <section class="view" id="view-history">
+        <div class="subtabs">
+          <button class="subtab active" data-subtab="cmd-history">Command History</button>
+          <button class="subtab" data-subtab="screenshots">Screenshots Gallery</button>
+        </div>
+
+        <div class="subview active" id="subview-cmd-history">
+          <div class="card">
+            <div class="card-header wrap-header">
+              <h2>Command Execution Log</h2>
+              <div class="toolbar">
+                <input type="search" id="history-search" class="search-input" placeholder="Search commands or responses..." />
+                <select id="history-status-filter" class="select-input">
+                  <option value="">All Statuses</option>
+                  <option value="success">Success</option>
+                  <option value="error">Error</option>
+                  <option value="blocked">Blocked</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="pending_confirmation">Pending Confirm</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" id="btn-export-history">Export JSON</button>
+                <button class="btn btn-danger btn-sm" id="btn-clear-history">Clear All</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Mode</th>
+                    <th>Command</th>
+                    <th>Intent</th>
+                    <th>Status</th>
+                    <th>Response</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="history-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="subview" id="subview-screenshots">
+          <div class="card">
+            <div class="card-header">
+              <h2>Captured Screenshots</h2>
+              <div class="toolbar">
+                <button class="btn btn-primary btn-sm" id="btn-capture-now">📸 Capture Screenshot Now</button>
+                <button class="btn btn-secondary btn-sm" id="btn-refresh-shots">Refresh</button>
+              </div>
+            </div>
+            <div class="screenshots-grid" id="screenshots-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 4: NOTES -->
+      <section class="view" id="view-notes">
+        <div class="card notes-card">
+          <div class="card-header">
+            <h2>Quick Notes &amp; Voice Reminders</h2>
+            <span class="muted">Voice tip: say "Take a note ..." or "Read my notes"</span>
+          </div>
+          <form id="note-form" class="inline-form" novalidate>
+            <input type="text" id="note-input" placeholder="Write a quick note..." required />
+            <button type="submit" class="btn btn-primary">Add Note</button>
+          </form>
+          <ul class="notes-list" id="notes-list"></ul>
+        </div>
+      </section>
+
+      <!-- VIEW 5: SETTINGS & DIAGNOSTICS -->
+      <section class="view" id="view-settings">
+        <div class="two-col-grid">
+          <div class="card">
+            <div class="card-header"><h2>Speech, Audio &amp; Safety Settings</h2></div>
+            <form id="settings-form" class="stacked-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="set-user-name">Your Name (Greeting)</label>
+                  <input id="set-user-name" type="text" />
+                </div>
+                <div class="form-group">
+                  <label for="set-default-city">Default Weather City</label>
+                  <input id="set-default-city" type="text" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="set-mic-index">Microphone Input Device</label>
+                <div class="inline-form">
+                  <select id="set-mic-index" class="select-input"></select>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-calibrate-mic">Calibrate Noise</button>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="set-stt-lang">Recognition Language</label>
+                  <select id="set-stt-lang" class="select-input">
+                    <option value="en-IN">English (India) — en-IN</option>
+                    <option value="en-US">English (US) — en-US</option>
+                    <option value="en-GB">English (UK) — en-GB</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="set-stt-engine">Recognition Engine</label>
+                  <select id="set-stt-engine" class="select-input">
+                    <option value="google">Google Speech (Online)</option>
+                    <option value="sphinx">PocketSphinx (Offline, if installed)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="set-tts-voice">Text-to-Speech Voice (pyttsx3)</label>
+                <div class="inline-form">
+                  <select id="set-tts-voice" class="select-input"></select>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-test-tts">Test Voice</button>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="set-tts-rate">Speech Rate: <strong id="lbl-tts-rate">175</strong> WPM</label>
+                  <input id="set-tts-rate" type="range" min="100" max="280" step="5" value="175" />
+                </div>
+                <div class="form-group">
+                  <label for="set-tts-vol">Speech Volume: <strong id="lbl-tts-vol">95%</strong></label>
+                  <input id="set-tts-vol" type="range" min="0" max="1" step="0.05" value="0.95" />
+                </div>
+              </div>
+
+              <label class="checkbox-row">
+                <input id="set-tts-enabled" type="checkbox" checked />
+                <span>Enable spoken responses (Text-to-Speech)</span>
+              </label>
+
+              <label class="checkbox-row">
+                <input id="set-confirm-guard" type="checkbox" checked />
+                <span>Require confirmation before executing sensitive/system commands</span>
+              </label>
+
+              <button type="submit" class="btn btn-primary">Save Settings</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <div class="card-header"><h2>Module Diagnostics &amp; Integrations</h2></div>
+            <div class="diagnostics-list" id="diagnostics-list"></div>
+            <div class="info-callout">
+              <strong>Optional API Integrations (.env)</strong>
+              <p>ORION runs all core synopsis features with zero API keys. To unlock optional Weather API (OpenWeatherMap) or AI Q&amp;A (Gemini / OpenAI), copy <code>.env.example</code> to <code>.env</code> and add your keys.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Confirmation Modal for Restricted / Sensitive Actions -->
+  <div class="modal-backdrop hidden" id="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="modal-card">
+      <div class="modal-icon">⚠️</div>
+      <h2 id="confirm-title">Confirmation Required</h2>
+      <p class="modal-action" id="confirm-action-desc"></p>
+      <p class="modal-warning" id="confirm-warning-msg"></p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btn-confirm-cancel">Cancel Action</button>
+        <button class="btn btn-danger" id="btn-confirm-approve">Approve &amp; Execute</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-stack" id="toast-stack"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
