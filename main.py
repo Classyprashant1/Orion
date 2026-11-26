@@ -15,16 +15,21 @@ import sys
 import webbrowser
 
 import uvicorn
+from fastapi import FastAPI
 
 from orion.api.server import OrionAPIServer, create_app
 from orion.config import OrionConfig
 from orion.core.assistant import OrionAssistant
 from orion.core.models import InputMode
 
-
-# Top-level FastAPI application instance for Vercel and ASGI servers
+# Top-level literal `app = FastAPI(...)` required by Vercel's static entrypoint scanner
+app = FastAPI(
+    title="ORION Desktop Virtual Assistant API",
+    version="1.0.0",
+    description="Local REST & WebSocket API for ORION Voice-Controlled Desktop Virtual Assistant.",
+)
 default_assistant = OrionAssistant()
-app = create_app(default_assistant)
+create_app(assistant=default_assistant, app=app)
 
 
 def run_cli(assistant: OrionAssistant) -> None:

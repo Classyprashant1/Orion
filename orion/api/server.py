@@ -134,7 +134,10 @@ class _WebSocketHub:
 # ------------------------------------------------------------------ #
 # FastAPI Application Factory
 # ------------------------------------------------------------------ #
-def create_app(assistant: OrionAssistant | None = None) -> FastAPI:
+def create_app(
+    assistant: OrionAssistant | None = None,
+    app: FastAPI | None = None,
+) -> FastAPI:
     if assistant is None:
         assistant = OrionAssistant()
     hub = _WebSocketHub()
@@ -151,12 +154,15 @@ def create_app(assistant: OrionAssistant | None = None) -> FastAPI:
         finally:
             assistant.unsubscribe(_on_assistant_event)
 
-    app = FastAPI(
-        title="ORION Desktop Virtual Assistant API",
-        version=__version__,
-        description="Local REST & WebSocket API for ORION Voice-Controlled Desktop Virtual Assistant.",
-        lifespan=lifespan,
-    )
+    if app is None:
+        app = FastAPI(
+            title="ORION Desktop Virtual Assistant API",
+            version=__version__,
+            description="Local REST & WebSocket API for ORION Voice-Controlled Desktop Virtual Assistant.",
+            lifespan=lifespan,
+        )
+    else:
+        app.router.lifespan_context = lifespan
 
     app.add_middleware(
         CORSMiddleware,
